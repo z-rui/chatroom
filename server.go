@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"container/list"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -16,18 +17,25 @@ var clients struct {
 	sync.Mutex
 }
 
+func closeConnection(e *list.Element) {
+}
+
 func incomingDaemon(e *list.Element) {
 	conn := e.Value.(net.Conn)
 	r := bufio.NewReader(conn)
+	defer func() {
+		clients.Lock()
+		clients.Remove(e)
+		clients.Unlock()
+		log.Println(conn.RemoteAddr(), "disconnected")
+	}()
 	for {
 		line, err := r.ReadBytes('\n')
 		if err != nil {
 			log.Println(err.Error())
-			if err, ok := err.(net.Error); ok && !err.Temporary() {
-				clients.Lock()
-				clients.Remove(e)
-				clients.Unlock()
-				log.Println(conn.RemoteAddr(), "disconnected")
+			if err == io.EOF {
+				return
+			} else if err, ok := err.(net.Error); ok && !err.Temporary() {
 				return
 			}
 			continue
