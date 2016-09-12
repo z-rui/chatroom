@@ -18,12 +18,19 @@ const MESSAGE_LOG_LINES = 13
 
 var messageLog []string
 
+func fatalln(x ...interface{}) {
+	termui.StopLoop()
+	termui.Close()
+	log.Println(x...)
+	os.Exit(1)
+}
+
 func incomingDaemon() {
 	r := bufio.NewReader(conn)
 	for {
 		line, err := r.ReadString('\n')
 		if err != nil {
-			log.Fatalln(err.Error())
+			fatalln(err.Error())
 			continue
 		}
 		recvMessage(line)
@@ -42,7 +49,7 @@ func recvMessage(msg string) {
 func sendMessage(msg string) {
 	_, err := conn.Write([]byte(msg))
 	if err != nil {
-		log.Fatalln(err.Error())
+		fatalln(err.Error())
 	}
 }
 
@@ -54,7 +61,7 @@ var (
 func main() {
 	err := termui.Init()
 	if err != nil {
-		log.Fatalln(err.Error())
+		fatalln(err.Error())
 	}
 	defer termui.Close()
 
@@ -64,7 +71,7 @@ func main() {
 
 	conn, err = net.Dial("tcp", serverAddr)
 	if err != nil {
-		log.Fatalln(err.Error())
+		fatalln(err.Error())
 	}
 	log.Println("Connected to", serverAddr)
 
