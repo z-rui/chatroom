@@ -48,11 +48,12 @@ func broadcast(line []byte) {
 	clients.Lock()
 	defer clients.Unlock()
 	for e := clients.Front(); e != nil; e = e.Next() {
-		conn := e.Value.(net.Conn)
-		_, err := conn.Write(line)
-		if err != nil {
-			log.Println(err.Error())
-		}
+		go func(conn net.Conn) {
+			_, err := conn.Write(line)
+			if err != nil {
+				log.Println(err.Error())
+			}
+		}(e.Value.(net.Conn))
 	}
 }
 
