@@ -17,8 +17,12 @@ var clients struct {
 	sync.Mutex
 }
 
-func incomingDaemon(e *list.Element) {
-	conn := e.Value.(net.Conn)
+func serve(conn net.Conn) {
+	clients.Lock()
+	e := clients.PushBack(conn)
+	clients.Unlock()
+	log.Println(conn.RemoteAddr(), "connected")
+
 	r := bufio.NewReader(conn)
 	for {
 		line, err := r.ReadBytes('\n')
@@ -33,6 +37,7 @@ func incomingDaemon(e *list.Element) {
 		}
 		broadcast(line)
 	}
+
 	clients.Lock()
 	clients.Remove(e)
 	clients.Unlock()
@@ -68,10 +73,6 @@ func main() {
 			log.Println(err.Error())
 			continue
 		}
-		clients.Lock()
-		e := clients.PushBack(conn)
-		clients.Unlock()
-		go incomingDaemon(e)
-		log.Println("Client", conn.RemoteAddr(), "connected")
+		go serve(conn)
 	}
 }
